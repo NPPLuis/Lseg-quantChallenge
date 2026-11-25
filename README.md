@@ -1,11 +1,10 @@
 # Natural Language → Architecture Diagram Generator
 
-Describe a system in plain English and get a clean, editable architecture diagram back.
+Describe a system in plain language and get an editable flowchart of its architecture back.
 
-🥉 **3rd place out of 28 teams at the LSEG QuantChallenge 2026 hackathon (Bucharest).** Built by a team of three during the event ([original team repository](https://github.com/T0mike/Lseg-quantChallenge)).
+Example prompt (one of the examples built into the app):
 
-> *"Trading workflow where a user submits an order, the risk engine validates it, and the execution venue confirms it"*
-> → a Mermaid flowchart with the right shapes for databases, decisions and external services, plus a list of components the description forgot.
+> Trading workflow where a user submits an order, the risk engine validates it, and the execution venue confirms it
 
 ## How it works
 
@@ -20,13 +19,12 @@ The app runs your description through a four-stage LLM pipeline built with LangC
 
 1. **Refine the prompt** (`src/preprocessing`). A vague, short or non-English description is rewritten into a precise English one that is easier to turn into a diagram.
 2. **Analyze the architecture** (`src/analysis`). The model returns *structured output* validated with Pydantic: the components and the shape each should have (database → cylinder, decision → diamond, external service → subroutine, …), the relationships between them, decision points, best-practice notes, and up to three **missing components** the flow would break without.
-3. **Generate the diagram** (`src/generation`). The description and the analysis are turned into Mermaid code, streamed live into the UI. The output is then normalized: code fences are stripped, the diagram type is checked against Mermaid's known types, and bare edge lists get a `flowchart` header.
+3. **Generate the diagram** (`src/generation`). The description and the analysis are turned into a Mermaid flowchart, streamed live into the UI. The model is instructed to include every component from the analysis, use the assigned shapes, and color-code nodes by type (decisions, databases, start/end points, external services). The output is then normalized: code fences are stripped, the diagram type is checked against Mermaid's known types, and bare edge lists get a `flowchart` header.
 4. **Enhance it** (`src/enhancement`). The model proposes up to five improvements (layout, labels, styling, completeness, best practices), each with its own preview. You pick the ones you want and they are merged into the diagram. You can also edit the diagram by typing an instruction ("add a retry path from the risk engine back to the trader"). Every edit is kept in a history and can be undone.
 
 ## Features
 
 - Interactive diagram canvas: zoom with buttons or the mouse wheel, drag to pan
-- Custom node colors by category
 - Tabs for the diagram, the raw Mermaid code, the architecture analysis and the enhancement tools
 - Generated diagrams are cached per prompt during a session, so repeating a prompt does not call the models again
 - Works with OpenAI or Anthropic models, configurable separately for each pipeline stage
@@ -38,7 +36,7 @@ Python 3.14 · Streamlit · LangChain · Pydantic · Mermaid.js · OpenAI / Anth
 
 ## Running locally
 
-Requires [uv](https://docs.astral.sh/uv/) and an OpenAI or Anthropic API key.
+Requires [uv](https://docs.astral.sh/uv/) and an OpenAI API key. All stages use OpenAI by default; to use Anthropic models instead, add an Anthropic key and change the providers as shown below.
 
 ```bash
 mkdir -p .streamlit
@@ -63,7 +61,7 @@ Each stage reads its model from environment variables (or root-level keys in `.s
 | Generate | `MERMAID_AGENT_MODEL`, `MERMAID_AGENT_PROVIDER`, `MERMAID_AGENT_TEMPERATURE` |
 | Enhance | `ENHANCEMENT_MODEL`, `ENHANCEMENT_PROVIDER`, `ENHANCEMENT_TEMPERATURE`, `ENHANCEMENT_MAX_SUGGESTIONS` |
 
-For example, to generate diagrams with Claude:
+For example, to run the generation stage on Claude (the other stages stay on OpenAI):
 
 ```toml
 MERMAID_AGENT_PROVIDER = "anthropic"
@@ -78,6 +76,8 @@ With `.streamlit/secrets.toml` in place:
 docker build -t diagram-generator .
 docker run -p 8501:8501 diagram-generator
 ```
+
+The secrets file is copied into the image, so keep the image local and don't push it to a public registry.
 
 ## Project structure
 
